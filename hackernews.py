@@ -1,7 +1,5 @@
 # hackernews.py -- get and save hackernews API data into news_items table of hackernews.db database
 
-# Test
-
 import requests
 from datetime import datetime
 from app import app, db, NewsItem
