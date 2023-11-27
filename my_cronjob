@@ -1,0 +1,4 @@
+# Update the SQLite database with the latest news from Hacker News every hour and keep record into syslog
+# logging >> into a file
+
+0 * * * * /home/maverick/myproject/myenv/bin/python /home/maverick/myproject/app/hackernews.py >> /var/log/syslog 2>&1

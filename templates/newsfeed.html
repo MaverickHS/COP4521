@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div>
+    <h1>Hacker News Feed </h1>
+    <ul id="news-list">
+        {% for news in newsfeed %}
+        <li>
+            <h2>{{ news.title }}</h2>
+            <p>{{ news.description }}</p>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}
