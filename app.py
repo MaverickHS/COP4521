@@ -1,5 +1,8 @@
+# app.py
+# This file serves as the main driver for the Flask Server
+
 from datetime import datetime
-from flask import Flask, render_template, url_for, flash, redirect, jsonify
+from flask import Flask, render_template, url_for, flash, redirect, jsonify, session, url_for
 from flask_sqlalchemy import SQLAlchemy
 from forms import RegistrationForm, LoginForm
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
@@ -7,10 +10,20 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
 from authlib.integrations.flask_client import OAuth
+import json
+from os import environ as env
+from urllib.parse import quote_plus, urlencode
+from authlib.integrations.flask_client import OAuth
+from dotenv import find_dotenv, load_dotenv
+
+# .env file initalization
+ENV_FILE = find_dotenv()
+if ENV_FILE:
+    load_dotenv(ENV_FILE)
 
 app = Flask(__name__)   # for Flask
 oauth = OAuth(app)      # for Auth0
-app.config['SECRET_KEY'] = 'vM5iNI2GN2FWC96NHBkurcHd3Ly56N51'   # for Flask security and cookies
+app.secret_key = env.get("APP_SECRET_KEY")   # for cookies and session management
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hackernews.db'   # for SQLite database
 db = SQLAlchemy(app)    # for SQLite
 
@@ -67,11 +80,21 @@ class User(db.Model):
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}')"
 
+# More Auth0 configurations
+oauth.register(
+    "auth0",
+    client_id=env.get("AUTH0_CLIENT_ID"),
+    client_secret=env.get("AUTH0_CLIENT_SECRET"),
+    client_kwargs={
+        "scope": "openid profile email",
+    },
+    server_metadata_url=f'https://{env.get("AUTH0_DOMAIN")}/.well-known/openid-configuration'
+)
+
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template('home.html')
-
+    return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
 
 @app.route("/about")
 def about():
@@ -86,16 +109,32 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@app.route("/login", methods=['GET', 'POST'])
+@app.route("/login")
 def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        if form.email.data == 'admin@blog.com' and form.password.data == 'password':
-            flash('You have been logged in!', 'success')
-            return redirect(url_for('home'))
-        else:
-            flash('Login Unsuccessful. Please check username and password', 'danger')
-    return render_template('login.html', title='Login', form=form)
+    return oauth.auth0.authorize_redirect(
+        redirect_uri=url_for("callback", _external=True)
+    )
+
+@app.route("/callback", methods=["GET", "POST"])
+def callback():
+    token = oauth.auth0.authorize_access_token()
+    session["user"] = token
+    return redirect("/")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(
+        "https://" + env.get("AUTH0_DOMAIN")
+        + "/v2/logout?"
+        + urlencode(
+            {
+                "returnTo": url_for("home", _external=True),
+                "client_id": env.get("AUTH0_CLIENT_ID"),
+            },
+            quote_via=quote_plus,
+        )
+    )
 
 @app.route('/newsfeeed', methods=['GET'])
 @app.route('/newsfeed', methods=['GET'])
