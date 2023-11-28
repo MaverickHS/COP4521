@@ -2,9 +2,8 @@
 # This file serves as the main driver for the Flask Server
 
 from datetime import datetime
-from flask import Flask, render_template, url_for, flash, redirect, jsonify, session, url_for
+from flask import Flask, render_template, url_for, flash, redirect, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
-from forms import RegistrationForm, LoginForm
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -69,7 +68,9 @@ class User(db.Model):
     username = Column(String(20), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
     image_file = Column(String(20), nullable=False, default='default.jpg')
-    password = Column(String(60), nullable=False)
+    sub = Column(String(255), unique=True, nullable=True)  # Auth0 subject identifier
+    auth0_profile = Column(JSON, nullable=True)  # Store additional Auth0 profile information if needed
+
 
     # Relationship for likes
     liked_news_items = relationship('NewsItem', secondary=user_newsitem_likes, back_populates='likers')
@@ -100,25 +101,40 @@ def home():
 def about():
     return render_template('about.html', title='About')
 
-@app.route("/register", methods=['GET', 'POST'])
-def register():
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        flash(f'Account created for {form.username.data}!', 'success')
-        return redirect(url_for('home'))
-    return render_template('register.html', title='Register', form=form)
-
-
 @app.route("/login")
 def login():
     return oauth.auth0.authorize_redirect(
         redirect_uri=url_for("callback", _external=True)
     )
 
+# Update the callback route
 @app.route("/callback", methods=["GET", "POST"])
 def callback():
     token = oauth.auth0.authorize_access_token()
-    session["user"] = token
+
+    # Ensure that the userinfo URL includes the correct scheme (https://)
+    userinfo_url = f'https://{env.get("AUTH0_DOMAIN")}/userinfo'
+    
+    resp = oauth.auth0.get(userinfo_url)
+    
+    userinfo = resp.json()
+    user_sub = userinfo["sub"]  # Auth0 subject identifier
+    
+    # Check if the user already exists in your database
+    user = User.query.filter_by(sub=user_sub).first()
+
+    if not user:
+        # Create a new user in the database
+        user = User(
+            username=userinfo["nickname"],  # or any other Auth0 user attribute
+            email=userinfo["email"],
+            sub=user_sub,
+            auth0_profile=userinfo,  # Store additional Auth0 profile information if needed
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    session["user"] = userinfo  # Store Auth0 user data in the session
     return redirect("/")
 
 @app.route("/logout")
@@ -190,3 +206,34 @@ def news_feed():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+# Add routes for handling likes and dislikes
+@app.route("/like/<int:news_item_id>", methods=["POST"])
+def like(news_item_id):
+    # Retrieve the authenticated user from the session
+    user_sub = session["user"]["sub"]
+    user = User.query.filter_by(sub=user_sub).first()
+
+    # Retrieve the news item to be liked
+    news_item = NewsItem.query.get(news_item_id)
+
+    # Add the user to the likers relationship
+    news_item.likers.append(user)
+    db.session.commit()
+
+    return jsonify({"message": "Liked successfully"})
+
+@app.route("/dislike/<int:news_item_id>", methods=["POST"])
+def dislike(news_item_id):
+    # Retrieve the authenticated user from the session
+    user_sub = session["user"]["sub"]
+    user = User.query.filter_by(sub=user_sub).first()
+
+    # Retrieve the news item to be disliked
+    news_item = NewsItem.query.get(news_item_id)
+
+    # Add the user to the dislikers relationship
+    news_item.dislikers.append(user)
+    db.session.commit()
+
+    return jsonify({"message": "Disliked successfully"})
