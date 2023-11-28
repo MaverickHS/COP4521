@@ -97,9 +97,10 @@ oauth.register(
 def home():
     return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
 
-@app.route("/about")
-def about():
-    return render_template('about.html', title='About')
+@app.route("/profile")
+def profile():
+    # Add logic to retrieve and display user profile information
+    return render_template("profile.html")
 
 @app.route("/login")
 def login():
@@ -204,9 +205,6 @@ def news_feed():
     # Respond with the JSON representation of the news items
     return jsonify(news_items_list)
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
 # Add routes for handling likes and dislikes
 @app.route("/like/<int:news_item_id>", methods=["POST"])
 def like(news_item_id):
@@ -237,3 +235,6 @@ def dislike(news_item_id):
     db.session.commit()
 
     return jsonify({"message": "Disliked successfully"})
+
+if __name__ == '__main__':
+    app.run(debug=True)
