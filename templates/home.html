@@ -1,15 +1,33 @@
 {% extends "layout.html" %}
+
 {% block content %}
-    {% for post in posts %}
-        <article class="media content-section">
-          <div class="media-body">
-            <div class="article-metadata">
-              <a class="mr-2" href="#">{{ post.author }}</a>
-              <small class="text-muted">{{ post.date_posted }}</small>
-            </div>
-            <h2><a class="article-title" href="#">{{ post.title }}</a></h2>
-            <p class="article-content">{{ post.content }}</p>
-          </div>
-        </article>
-    {% endfor %}
-{% endblock content %}
+  <h2 class="mt-4">Hacker News</h2>
+
+  {% for post in posts.items %}
+    <div class="card mb-2">
+      <div class="card-body">
+        <h5 class="card-title">{{ post.title }}</h5>
+        <p class="card-text">{{ post.by }} - {{ post.time }}</p>
+        
+        <!-- Like and Dislike buttons -->
+        <div class="btn-group" role="group" aria-label="Like and Dislike buttons">
+          <button type="button" class="btn btn-outline-success btn-sm">Like</button>
+          <button type="button" class="btn btn-outline-danger btn-sm">Dislike</button>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+
+  <!-- Pagination -->
+  <div class="pagination mt-4">
+    <span class="mr-2">Page {{ posts.page }} of {{ posts.pages }}</span>
+    
+    {% if posts.has_prev %}
+      <a class="btn btn-outline-info btn-sm" href="?page={{ posts.prev_num }}">« Prev</a>
+    {% endif %}
+    
+    {% if posts.has_next %}
+      <a class="btn btn-outline-info btn-sm" href="?page={{ posts.next_num }}">Next »</a>
+    {% endif %}
+  </div>
+{% endblock %}

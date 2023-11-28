@@ -2,9 +2,9 @@
 # This file serves as the main driver for the Flask Server
 
 from datetime import datetime
-from flask import Flask, render_template, url_for, flash, redirect, jsonify, session
+from flask import Flask, render_template, url_for, flash, redirect, jsonify, session, request
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, func, desc
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.types import JSON
@@ -95,7 +95,36 @@ oauth.register(
 @app.route("/")
 @app.route("/home")
 def home():
-    return render_template("home.html", session=session.get('user'), pretty=json.dumps(session.get('user'), indent=4))
+    # Retrieve the page number from the query parameters, default to 1 if not provided
+    page = request.args.get('page', 1, type=int)
+
+    # Define the number of posts per page
+    posts_per_page = 10  # You can adjust this based on your preference
+
+    # Subquery to count likes 
+    likes_subquery = db.session.query(
+        user_newsitem_likes.c.news_item_id,
+        func.count('*').label('likes_count')
+    ).group_by(user_newsitem_likes.c.news_item_id).subquery()
+
+    # Subquery to count dislikes
+    dislikes_subquery = db.session.query(
+        user_newsitem_dislikes.c.news_item_id,
+        func.count('*').label('dislikes_count')
+    ).group_by(user_newsitem_dislikes.c.news_item_id).subquery()
+
+    # Query the paginated posts using SQLAlchemy's paginate method
+    posts = NewsItem.query.outerjoin(
+        likes_subquery, NewsItem.id == likes_subquery.c.news_item_id
+    ).outerjoin(
+        dislikes_subquery, NewsItem.id == dislikes_subquery.c.news_item_id
+    ).order_by(
+        desc(NewsItem.time),  # Sort by time in descending order (most recent first)
+        desc(func.coalesce(likes_subquery.c.likes_count, 0) + func.coalesce(dislikes_subquery.c.dislikes_count, 0))  # Sort by total likes and dislikes
+    ).paginate(page=page, per_page=posts_per_page, error_out=False)
+
+    return render_template("home.html", session=session.get('user'), posts=posts)
+
 
 @app.route("/profile")
 def profile():
@@ -154,12 +183,11 @@ def logout():
     )
 
 @app.route('/newsfeeed', methods=['GET'])
-@app.route('/newsfeed', methods=['GET'])
 def news_feed():
     # Retrieve the latest 'k' news items from the database
     k = 30
     
-    # Subquery to count likes
+    # Subquery to count likes 
     likes_subquery = db.session.query(
         user_newsitem_likes.c.news_item_id,
         func.count('*').label('likes_count')
