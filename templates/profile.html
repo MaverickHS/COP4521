@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h2 class="mt-4">User Profile</h2>
+  
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">User Information</h5>
+      <p class="card-text"><strong>Username:</strong> {{ user.username }}</p>
+      <p class="card-text"><strong>Email:</strong> {{ user.email }}</p>
+      <p class="card-text"><strong>Auth0 Sub:</strong> {{ user.sub }}</p>
+      <p class="card-text"><strong>Auth0 Profile:</strong> {{ user.auth0_profile }}</p>
+    </div>
+  </div>
+
+  <h5 class="mt-4">Liked News Items</h5>
+  {% if user.liked_news_items %}
+    <ul>
+      {% for news_item in user.liked_news_items %}
+        <li>{{ news_item.title }} - {{ news_item.by }} - {{ news_item.time }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No liked news items.</p>
+  {% endif %}
+
+  <h5 class="mt-4">Disliked News Items</h5>
+  {% if user.disliked_news_items %}
+    <ul>
+      {% for news_item in user.disliked_news_items %}
+        <li>{{ news_item.title }} - {{ news_item.by }} - {{ news_item.time }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No disliked news items.</p>
+  {% endif %}
+{% endblock %}

@@ -11,8 +11,8 @@
         
         <!-- Like and Dislike buttons -->
         <div class="btn-group" role="group" aria-label="Like and Dislike buttons">
-          <button type="button" class="btn btn-outline-success btn-sm">Like</button>
-          <button type="button" class="btn btn-outline-danger btn-sm">Dislike</button>
+          <button type="button" class="btn btn-outline-success btn-sm" onclick="likePost({{ post.id }})">Like</button>
+          <button type="button" class="btn btn-outline-danger btn-sm" onclick="dislikePost({{ post.id }})">Dislike</button>
         </div>
       </div>
     </div>
@@ -30,4 +30,21 @@
       <a class="btn btn-outline-info btn-sm" href="?page={{ posts.next_num }}">Next »</a>
     {% endif %}
   </div>
+
+  <!-- JavaScript for handling like and dislike -->
+  <script>
+    function likePost(newsItemId) {
+      fetch(`/like/${newsItemId}`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+
+    function dislikePost(newsItemId) {
+      fetch(`/dislike/${newsItemId}`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
+    }
+  </script>
 {% endblock %}

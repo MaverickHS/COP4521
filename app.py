@@ -128,8 +128,16 @@ def home():
 
 @app.route("/profile")
 def profile():
-    # Add logic to retrieve and display user profile information
-    return render_template("profile.html")
+    # Check if the user is logged in
+    if "user" in session:
+        # Retrieve the authenticated user from the session
+        user_sub = session["user"]["sub"]
+        user = User.query.filter_by(sub=user_sub).first()
+
+        return render_template("profile.html", user=user)
+    else:
+        # Redirect to the login page if the user is not logged in
+        return redirect(url_for("login"))
 
 @app.route("/login")
 def login():
@@ -243,6 +251,10 @@ def like(news_item_id):
     # Retrieve the news item to be liked
     news_item = NewsItem.query.get(news_item_id)
 
+    # Check if the user has already liked this post
+    if user in news_item.likers:
+        return jsonify({"message": "You have already liked this post"})
+
     # Add the user to the likers relationship
     news_item.likers.append(user)
     db.session.commit()
@@ -257,6 +269,10 @@ def dislike(news_item_id):
 
     # Retrieve the news item to be disliked
     news_item = NewsItem.query.get(news_item_id)
+
+    # Check if the user has already disliked this post
+    if user in news_item.dislikers:
+        return jsonify({"message": "You have already disliked this post"})
 
     # Add the user to the dislikers relationship
     news_item.dislikers.append(user)
