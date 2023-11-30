@@ -1,0 +1,44 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .news-item {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        form.delete-form {
+            display: inline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Admin Dashboard</h1>
+    <form action="{{ url_for('logout') }}" method="get">
+        <button type="submit">Logout</button>
+    </form>
+    <hr>
+    <div id="news-items">
+        <h2>Manage News Items</h2>
+        {% for post in posts %}
+        <div class="news-item">
+            <h3>{{ post.title }}</h3>
+            <p>by {{ post.by }} | {{ post.time }}</p>
+            <form class="delete-form" action="{{ url_for('delete_news_item', news_item_id=post.id) }}" method="post">
+                <input type="submit" value="Delete">
+            </form>
+        </div>
+        {% else %}
+        <p>No news items found.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

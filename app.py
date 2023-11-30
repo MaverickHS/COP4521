@@ -25,6 +25,7 @@ oauth = OAuth(app)      # for Auth0
 app.secret_key = env.get("APP_SECRET_KEY")   # for cookies and session management
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///hackernews.db'   # for SQLite database
 db = SQLAlchemy(app)    # for SQLite
+ADMIN_PASSWORD = "LinodeServer123" # for Admin Verification
 
 # DATABASES AND SQL
 # Association table for the many-to-many relationship between users and news items for likes
@@ -279,6 +280,44 @@ def dislike(news_item_id):
     db.session.commit()
 
     return jsonify({"message": "Disliked successfully"})
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if request.method == 'POST':
+        password = request.form['password']
+        if password == ADMIN_PASSWORD:
+            session['is_admin'] = True
+            flash('You have been logged in as admin!', 'success')
+            return redirect(url_for('admin_dashboard'))
+        else:
+            flash('Invalid password', 'danger')
+
+    return render_template('admin_login.html')  # You need to create this template
+
+@app.route("/admin")
+def admin_dashboard():
+    if not session.get('is_admin'):
+        # If the user is not confirmed as admin, redirect to the admin login page
+        flash('Please log in to access the admin dashboard.', 'warning')
+        return redirect(url_for('admin_login'))
+
+    news_items = NewsItem.query.all()
+    return render_template("admin.html", posts=news_items)
+
+@app.route("/admin/delete-news-item/<int:news_item_id>", methods=["POST"])
+def delete_news_item(news_item_id):
+    if not session.get('is_admin'):
+        flash('Unauthorized access. Admins only.', 'danger')
+        return redirect(url_for('admin_login'))
+
+    news_item = NewsItem.query.get_or_404(news_item_id)
+    news_item.likers.clear()
+    news_item.dislikers.clear()
+    db.session.delete(news_item)
+    db.session.commit()
+
+    flash('News item has been deleted', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
