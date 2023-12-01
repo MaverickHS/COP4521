@@ -1,42 +1,50 @@
-from config import app, db
+"""
+This module sets up the Flask application and its routes, database, and security configurations.
+"""
+
 from routes import main
-from flask import Flask, make_response
+from config import app, db
 
 app.register_blueprint(main)
 
-if __name__ == '__main__':
-    db.create_all()  # Create tables if not already present
-    app.run(debug=True)
-
 @app.after_request
 def set_security_headers(response):
+    """
+    Set security headers on each response to enhance security.
+    """
     # Content Security Policy
-    # WARNING: the following is a very restrictive policy just as an example.
-    # You'll need to customize the `default-src` directive to allow for your site's requirements.
-    # For example, if you load resources from CDN like scripts, styles, or images, you must include those domains in 'default-src'.
-    # Example CSP allowing resources to be loaded from self domain as well as some external domains
-    response.headers['Content-Security-Policy'] = (
-        "default-src 'self';"
-        "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com https://maxcdn.bootstrapcdn.com;"
-        "style-src 'self' https://fonts.googleapis.com https://maxcdn.bootstrapcdn.com;"
-        "img-src 'self' data:;"
-        "font-src 'self' https://fonts.gstatic.com;"
+    csp = (
+        "default-src 'self'; "
+        "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com "
+        "https://maxcdn.bootstrapcdn.com; "
+        "style-src 'self' https://fonts.googleapis.com https://maxcdn.bootstrapcdn.com; "
+        "img-src 'self' data:; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "object-src 'none';"
     )
 
     # HTTP Strict Transport Security
-    # max-age is the time in seconds that the browser should remember that a site is only to be accessed using HTTPS.
-    # includeSubDomains ensures that the rule also applies to all subdomains.
-    response.headers['Strict-Transport-Security'] = 'max-age=63072000; includeSubDomains'
+    hsts = 'max-age=63072000; includeSubDomains'
 
     # X-Content-Type-Options
-    response.headers['X-Content-Type-Options'] = 'nosniff'
+    xtype_options = 'nosniff'
 
     # X-Frame-Options
-    response.headers['X-Frame-Options'] = 'DENY'  # DENY ensures that your site cannot be put into an iframe.
+    xframe_options = 'DENY'  # DENY ensures that your site cannot be put into an iframe.
 
     # X-XSS-Protection
-    # "1; mode=block" enables XSS filtering. Rather than sanitizing the page, the browser will prevent rendering of the page if an attack is detected.
-    response.headers['X-XSS-Protection'] = '1; mode=block'
+    xxss_protection = '1; mode=block'  # Enables XSS filtering.
+
+    # Set headers
+    response.headers['Content-Security-Policy'] = csp
+    response.headers['Strict-Transport-Security'] = hsts
+    response.headers['X-Content-Type-Options'] = xtype_options
+    response.headers['X-Frame-Options'] = xframe_options
+    response.headers['X-XSS-Protection'] = xxss_protection
 
     return response
+
+
+if __name__ == '__main__':
+    db.create_all()  # Create tables if not already present
+    app.run(debug=True)

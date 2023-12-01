@@ -1,8 +1,13 @@
+"""
+This module sets up the Flask application configuration, including the database setup and 
+OAuth integration.
+"""
+
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from authlib.integrations.flask_client import OAuth
 from dotenv import find_dotenv, load_dotenv
-import os
 
 # .env file initialization
 ENV_FILE = find_dotenv()
