@@ -1,10 +1,13 @@
-from flask import Blueprint, request, jsonify, session, url_for, render_template, redirect, flash
-from models import NewsItem, User, user_newsitem_likes, user_newsitem_dislikes
-from sqlalchemy import func, desc
-from config import app, db, oauth
+"""This module defines the routes and views for the Flask application."""
+
 from os import environ as env
 from urllib.parse import quote_plus, urlencode
-import os
+
+from flask import Blueprint, request, jsonify, session, url_for, render_template, redirect, flash
+from sqlalchemy import func, desc
+
+from models import NewsItem, User, user_newsitem_likes, user_newsitem_dislikes
+from config import db, oauth
 
 ADMIN_PASSWORD = "LinodeServer123" # for Admin Verification
 
@@ -13,6 +16,7 @@ main = Blueprint('main', __name__)
 @main.route("/")
 @main.route("/home")
 def home():
+    """Route for home page, displays paginated news items."""
     # Retrieve the page number from the query parameters, default to 1 if not provided
     page = request.args.get('page', 1, type=int)
 
@@ -46,6 +50,7 @@ def home():
 
 @main.route("/profile")
 def profile():
+    """Route for users. Initiates login/register if not logged in. Otherwise, opens user profile"""
     # Check if the user is logged in
     if "user" in session:
         # Retrieve the authenticated user from the session
@@ -59,6 +64,7 @@ def profile():
 
 @main.route("/login")
 def login():
+    """Route triggered when user tries to view their profile when not logged in"""
     return oauth.auth0.authorize_redirect(
         redirect_uri=url_for("main.callback", _external=True)
     )
@@ -66,6 +72,7 @@ def login():
 # Update the callback route
 @main.route("/callback", methods=["GET", "POST"])
 def callback():
+    """Route triggered after user logs in/registers. If a new user, they are stored in users db"""
     token = oauth.auth0.authorize_access_token()
 
     # Ensure that the userinfo URL includes the correct scheme (https://)
@@ -95,6 +102,7 @@ def callback():
 
 @main.route("/logout")
 def logout():
+    """Route to log out users. Clears login status and redirects to home"""
     session.clear()
     return redirect(
         "https://" + env.get("AUTH0_DOMAIN")
@@ -110,6 +118,7 @@ def logout():
 
 @main.route('/newsfeeed', methods=['GET'])
 def news_feed():
+    """Route to diplay newsfeeed as JSON values"""
     # Retrieve the latest 'k' news items from the database
     k = 30
     
@@ -162,6 +171,7 @@ def news_feed():
 # Add routes for handling likes and dislikes
 @main.route("/like/<int:news_item_id>", methods=["POST"])
 def like(news_item_id):
+    """Route for when logged in users like a post"""
     # Retrieve the authenticated user from the session
     user_sub = session["user"]["sub"]
     user = User.query.filter_by(sub=user_sub).first()
@@ -181,6 +191,7 @@ def like(news_item_id):
 
 @main.route("/dislike/<int:news_item_id>", methods=["POST"])
 def dislike(news_item_id):
+    """Route for when logged in users dislike a post"""
     # Retrieve the authenticated user from the session
     user_sub = session["user"]["sub"]
     user = User.query.filter_by(sub=user_sub).first()
@@ -200,6 +211,7 @@ def dislike(news_item_id):
 
 @main.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
+    """Route for users to login as Admins. Password locked."""
     if request.method == 'POST':
         password = request.form['password']
         if password == ADMIN_PASSWORD:
@@ -213,6 +225,7 @@ def admin_login():
 
 @main.route("/admin")
 def admin_dashboard():
+    """Route for admins to manage news items. Allows deletion of news items"""
     if not session.get('is_admin'):
         # If the user is not confirmed as admin, redirect to the admin login page
         flash('Please log in to access the admin dashboard.', 'warning')
@@ -223,6 +236,7 @@ def admin_dashboard():
 
 @main.route("/admin/delete-news-item/<int:news_item_id>", methods=["POST"])
 def delete_news_item(news_item_id):
+    """Route triggered when admins delete news items. Removes from all relevant db's"""
     if not session.get('is_admin'):
         flash('Unauthorized access. Admins only.', 'danger')
         return redirect(url_for('main.admin_login'))
