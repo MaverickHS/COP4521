@@ -22,7 +22,7 @@
 </head>
 <body>
     <h1>Admin Dashboard</h1>
-    <form action="{{ url_for('logout') }}" method="get">
+    <form action="{{ url_for('main.logout') }}" method="get">
         <button type="submit">Logout</button>
     </form>
     <hr>
@@ -32,7 +32,7 @@
         <div class="news-item">
             <h3>{{ post.title }}</h3>
             <p>by {{ post.by }} | {{ post.time }}</p>
-            <form class="delete-form" action="{{ url_for('delete_news_item', news_item_id=post.id) }}" method="post">
+            <form class="delete-form" action="{{ url_for('main.delete_news_item', news_item_id=post.id) }}" method="post">
                 <input type="submit" value="Delete">
             </form>
         </div>
