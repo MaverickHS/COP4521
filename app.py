@@ -15,7 +15,7 @@ def set_security_headers(response):
     # Content Security Policy
     csp = (
         "default-src 'self'; "
-        "script-src 'self' https://code.jquery.com https://cdnjs.cloudflare.com "
+        "script-src 'self' 'unsafe-inline' https://code.jquery.com https://cdnjs.cloudflare.com "
         "https://maxcdn.bootstrapcdn.com; "
         "style-src 'self' https://fonts.googleapis.com https://maxcdn.bootstrapcdn.com; "
         "img-src 'self' data:; "
