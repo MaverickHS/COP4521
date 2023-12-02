@@ -28,8 +28,10 @@ This project is a Python web application developed for COP4521, focusing on Pyth
 - Test the installation using commands.
 
 ## Configs
-- INFO NEEDED
-
+- Flask for web hosting
+- SQLite3 for database hosting
+- SQLAlchemy for retrieving data from tables
+- 0Auth for Google login and managing users
 
 ## Testing
 Certainly! Let's expand the testing section to provide more comprehensive details:
